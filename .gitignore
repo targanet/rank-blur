@@ -1,0 +1,13 @@
+# .NET build output
+bin/
+obj/
+
+# Local runtime data (in-memory app's persisted JSON — don't publish test data)
+RankBlur/App_Data/
+
+# Editor/OS junk
+.vs/
+.vscode/
+*.user
+Thumbs.db
+.DS_Store

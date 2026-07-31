@@ -1,0 +1,222 @@
+@page
+@using System.Globalization
+@model RankBlur.Pages.IndexModel
+@{
+    ViewData["Title"] = "Championship";
+}
+
+<div class="hero">
+    <div class="hero-video-wrap">
+        <iframe id="hero-video-frame" class="hero-video-frame" src="https://www.youtube.com/embed/03cZRvxQC_I?autoplay=1&mute=1&loop=1&playlist=03cZRvxQC_I&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&enablejsapi=1" title="" frameborder="0" allow="autoplay; encrypted-media" tabindex="-1"></iframe>
+    </div>
+    <div class="hero-tint"></div>
+    <div class="hero-fade"></div>
+    <button type="button" id="hero-sound-toggle" class="hero-sound-toggle" aria-pressed="false">
+        <svg class="icon-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>
+        <svg class="icon-unmuted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>
+        <span id="hero-sound-label">ATIVAR SOM</span>
+    </button>
+    <div class="hero-content">
+        <h1 class="page-title">BLUR</h1>
+        <h2 class="page-subtitle">CHAMPIONSHIP</h2>
+        <p class="page-description">RACING SCORE TRACKER</p>
+    </div>
+</div>
+
+<div class="rank-shell">
+    <section class="section">
+        <h2 class="section-heading">LEADERBOARD</h2>
+        <div class="panel">
+            @if (Model.Leaderboard.Any())
+            {
+                <div class="leaderboard-list">
+                    @{ var rank = 0; }
+                    @foreach (var item in Model.Leaderboard)
+                    {
+                        rank++;
+                        var rankClass = rank <= 3 ? $"lb-rank-{rank}" : "";
+                        var player = Model.PlayerOf(item.PlayerId);
+                        var dialogId = $"player-dialog-{item.PlayerId}";
+                        <div class="lb-card @rankClass">
+                            <div class="lb-badge">@rank</div>
+                            <button type="button" class="lb-avatar-link" title="Ver perfil" onclick="document.getElementById('@dialogId').showModal()">
+                                <span class="avatar lb-avatar">
+                                    @if (!string.IsNullOrEmpty(item.PhotoDataUrl))
+                                    {
+                                        <img src="@item.PhotoDataUrl" alt="@item.PlayerName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-fallback">@item.PlayerName.Substring(0, 1).ToUpperInvariant()</span>
+                                    }
+                                </span>
+                            </button>
+                            <dialog id="@dialogId" class="player-dialog">
+                                <form method="dialog">
+                                    <button class="player-dialog-close" aria-label="Fechar">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                    </button>
+                                </form>
+                                <div class="player-dialog-photo">
+                                    @if (!string.IsNullOrEmpty(item.PhotoDataUrl))
+                                    {
+                                        <img src="@item.PhotoDataUrl" alt="@item.PlayerName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-fallback big">@item.PlayerName.Substring(0, 1).ToUpperInvariant()</span>
+                                    }
+                                </div>
+                                <h3 class="player-dialog-name">@item.PlayerName</h3>
+                                @if (!string.IsNullOrEmpty(player?.Bio))
+                                {
+                                    <p class="player-dialog-bio">@player.Bio</p>
+                                }
+                                else
+                                {
+                                    <p class="player-dialog-bio muted">Nenhuma informação cadastrada</p>
+                                }
+                                <div class="player-dialog-stats">
+                                    <div class="lb-stat">
+                                        <div class="lb-stat-label wins">WINS</div>
+                                        <p class="lb-stat-value primary">@item.Wins</p>
+                                    </div>
+                                    <div class="lb-stat">
+                                        <div class="lb-stat-label total">TOTAL</div>
+                                        <p class="lb-stat-value neon">@item.Total</p>
+                                    </div>
+                                    <div class="lb-stat">
+                                        <div class="lb-stat-label">RACES</div>
+                                        <p class="lb-stat-value">@item.Races</p>
+                                    </div>
+                                </div>
+                            </dialog>
+                            <div class="lb-info">
+                                <div class="lb-name-row">
+                                    <h3 class="lb-name">@item.PlayerName</h3>
+                                    @if (rank == 1)
+                                    {
+                                        <svg class="lb-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" /></svg>
+                                    }
+                                </div>
+                                <p class="lb-races">@item.Races @(item.Races == 1 ? "race" : "races")</p>
+                            </div>
+                            <div class="lb-stats">
+                                <div class="lb-stat">
+                                    <div class="lb-stat-label wins">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978" /><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978" /><path d="M18 9h1.5a1 1 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6 9H4.5a1 1 0 0 1 0-5H6" />
+                                        </svg>
+                                        WINS
+                                    </div>
+                                    <p class="lb-stat-value primary">@item.Wins</p>
+                                </div>
+                                <div class="lb-stat">
+                                    <div class="lb-stat-label total">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" />
+                                        </svg>
+                                        TOTAL
+                                    </div>
+                                    <p class="lb-stat-value neon">@item.Total</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-card">
+                    <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
+                    <span class="empty-title">No races recorded yet</span>
+                    <span class="empty-subtitle">Log your first session to get started</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-heading">RACE HISTORY</h2>
+        <div class="panel">
+            @if (Model.History.Any())
+            {
+                <div>
+                    @foreach (var session in Model.History)
+                    {
+                        var winners = Model.WinnersOf(session);
+                        <div class="session-card">
+                            <div class="session-header">
+                                <div class="session-date-row">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" />
+                                    </svg>
+                                    <p class="session-date">@session.Date.ToString("MMM d, yyyy", CultureInfo.InvariantCulture)</p>
+                                </div>
+                                <form method="post" asp-page-handler="DeleteSession" onsubmit="return confirm('Isso vai excluir permanentemente esta sessão de corrida. Esta ação não pode ser desfeita.');">
+                                    <input type="hidden" name="id" value="@session.Id" />
+                                    <button type="submit" class="session-delete" aria-label="Excluir sessão">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="session-scores">
+                                @foreach (var score in session.Scores.OrderByDescending(s => s.Points))
+                                {
+                                    var scorePlayer = Model.PlayerOf(score.PlayerId);
+                                    var isWinner = winners.Contains(score.PlayerId);
+                                    <div class="session-score @(isWinner ? "winner" : "")">
+                                        <span class="avatar session-score-avatar">
+                                            @if (!string.IsNullOrEmpty(scorePlayer?.PhotoDataUrl))
+                                            {
+                                                <img src="@scorePlayer.PhotoDataUrl" alt="@scorePlayer.Name" />
+                                            }
+                                            else
+                                            {
+                                                <span class="avatar-fallback">@(scorePlayer?.Name.Substring(0, 1).ToUpperInvariant())</span>
+                                            }
+                                        </span>
+                                        <div class="session-score-name-wrap">
+                                            <p class="session-score-name">@scorePlayer?.Name</p>
+                                            @if (isWinner)
+                                            {
+                                                <svg class="session-score-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" /></svg>
+                                            }
+                                        </div>
+                                        <p class="session-score-points">@score.Points</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-card">
+                    <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                    </svg>
+                    <span class="empty-title">No sessions recorded</span>
+                    <span class="empty-subtitle">Log your first race above</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <div class="cta-wrap">
+        <a class="outline-btn" asp-page="/Manage">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                <circle cx="12" cy="12" r="3" />
+            </svg>
+            LOG SESSION / PLAYERS
+        </a>
+    </div>
+</div>

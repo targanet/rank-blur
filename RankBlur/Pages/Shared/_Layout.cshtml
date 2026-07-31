@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Blur Tracker</title>
+    <meta name="description" content="Blur Tracker — Racing Score Tracker" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    @if (TempData["ToastTitle"] is string title && !string.IsNullOrEmpty(title))
+    {
+        var message = TempData["ToastMessage"] as string;
+        var isError = TempData["ToastIsError"] is true;
+        <div class="toast @(isError ? "toast-error" : "toast-success")" id="app-toast">
+            <strong>@title</strong>
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <span>@message</span>
+            }
+        </div>
+    }
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div>BLUR RACING CHAMPIONSHIP &copy; @DateTime.Now.Year</div>
+        <div class="tagline">may the fastest racer win</div>
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>
