@@ -1038,6 +1038,29 @@ img {
     font-size: 1.3rem;
   }
 
+  .lb-badge {
+    width: 1.7rem;
+    height: 1.7rem;
+    font-size: 0.75rem;
+  }
+
+  .lb-card {
+    flex-wrap: wrap;
+  }
+
+  .lb-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .lb-stats {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-left: calc(1.7rem + 3rem + 0.75rem + 0.75rem);
+    margin-top: 0.3rem;
+  }
+
   .toast {
     left: 1rem;
     right: 1rem;
