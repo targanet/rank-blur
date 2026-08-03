@@ -1044,8 +1044,30 @@ img {
     font-size: 0.65rem;
   }
 
+  .avatar.lb-avatar {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+
+  .lb-card {
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+  }
+
   .lb-stats {
     gap: 0.9rem;
+  }
+
+  .session-card {
+    padding: 1rem 0.6rem;
+    background: transparent;
+    border-color: transparent;
+    border-bottom: 1px solid hsl(var(--border));
+    border-radius: 0;
+  }
+
+  .session-scores {
+    grid-template-columns: 1fr;
   }
 
   .toast {
