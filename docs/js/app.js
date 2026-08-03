@@ -48,7 +48,11 @@
   }
 
   function isAuthed() {
-    return !!(configured && firebase.auth().currentUser);
+    try {
+      return !!(configured && firebase.auth().currentUser);
+    } catch (e) {
+      return false;
+    }
   }
 
   function onAuthChange(callback) {
@@ -56,9 +60,13 @@
       callback(false);
       return;
     }
-    firebase.auth().onAuthStateChanged(function (user) {
-      callback(!!user);
-    });
+    try {
+      firebase.auth().onAuthStateChanged(function (user) {
+        callback(!!user);
+      });
+    } catch (e) {
+      callback(false);
+    }
   }
 
   function signIn(password) {
@@ -349,9 +357,14 @@
     }
   }
 
+  // Runs immediately (not on DOMContentLoaded) so firebase.initializeApp()
+  // has already happened before manage.js/home.js execute their top-level
+  // code right after this script tag (they run synchronously, before
+  // DOMContentLoaded fires).
+  initFirebase();
+
   document.addEventListener('DOMContentLoaded', function () {
     wireHeroVideo();
-    initFirebase();
   });
 
   window.RankBlur = {
