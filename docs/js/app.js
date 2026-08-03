@@ -394,69 +394,42 @@
     }
 
     var videoId = '03cZRvxQC_I';
-    var muted = true;
-    var player = null;
+    var origin = encodeURIComponent(window.location.origin);
+    frame.src = 'https://www.youtube.com/embed/' + videoId +
+      '?autoplay=1&mute=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&controls=0&showinfo=0&disablekb=1' +
+      '&loop=1&playlist=' + videoId + '&origin=' + origin;
 
-    function loadYouTubeApi(callback) {
-      if (window.YT && window.YT.Player) {
-        callback();
-        return;
-      }
-      if (!document.getElementById('youtube-iframe-api')) {
-        var tag = document.createElement('script');
-        tag.id = 'youtube-iframe-api';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      }
-      var previous = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = function () {
-        if (typeof previous === 'function') {
-          previous();
-        }
-        callback();
-      };
+    var muted = true;
+
+    function postToPlayer(func, args) {
+      frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), '*');
     }
 
-    loadYouTubeApi(function () {
-      player = new YT.Player(frame, {
-        videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          disablekb: 1,
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: function (e) {
-            // The API replaces #hero-video-frame with its own iframe; re-attach
-            // the class so our fullscreen-cover CSS still applies to it.
-            e.target.getIframe().classList.add('hero-video-frame');
-          },
-          onStateChange: function (e) {
-            if (e.data === YT.PlayerState.ENDED) {
-              player.seekTo(0);
-              player.playVideo();
-            }
-          },
-        },
-      });
+    // Backup for the native loop param (which can be unreliable): explicitly
+    // restart when YouTube reports the video ended. This only listens to
+    // postMessage events the embed already sends with enablejsapi=1 — it does
+    // not load any extra script, so it can't be blocked by ad/privacy
+    // blockers the way the full iframe_api library sometimes is.
+    window.addEventListener('message', function (event) {
+      if (event.origin !== 'https://www.youtube.com') {
+        return;
+      }
+      var data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (e) {
+        return;
+      }
+      if (data.event === 'onStateChange' && data.info === 0) {
+        postToPlayer('seekTo', [0, true]);
+        postToPlayer('playVideo');
+      }
     });
 
     if (soundToggle) {
       soundToggle.addEventListener('click', function () {
-        if (!player) {
-          return;
-        }
         muted = !muted;
-        if (muted) {
-          player.mute();
-        } else {
-          player.unMute();
-        }
+        postToPlayer(muted ? 'mute' : 'unMute');
         soundToggle.setAttribute('aria-pressed', String(!muted));
         if (soundLabel) {
           soundLabel.textContent = muted ? 'ATIVAR SOM' : 'SILENCIAR';
