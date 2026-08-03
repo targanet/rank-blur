@@ -135,7 +135,7 @@
     }
 
     html += '<details class="add-player-toggle">';
-    html += '<summary class="outline-btn full-width">' + RB.svg('plus') + 'ADICIONAR PARTICIPANTE</summary>';
+    html += '<summary class="outline-btn full-width">' + RB.svg('plus', 'width="16" height="16"') + 'ADICIONAR PARTICIPANTE</summary>';
     html += addPlayerForm();
     html += '</details>';
 
