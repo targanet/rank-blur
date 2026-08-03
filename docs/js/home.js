@@ -68,61 +68,6 @@
 
   function renderHistory(data) {
     var panel = document.getElementById('history-panel');
-    var history = data.sessions.slice().sort(function (a, b) {
-      return new Date(b.date) - new Date(a.date);
-    });
-
-    if (history.length === 0) {
-      panel.innerHTML = RB.emptyCard('calendar', 'No sessions recorded', 'Log your first race above');
-      return;
-    }
-
-    var html = '';
-    history.forEach(function (session) {
-      var winners = RB.getSessionWinners(session);
-      html += '<div class="session-card">';
-      html += '<div class="session-header"><div class="session-date-row">' + RB.svg('calendar') +
-        '<p class="session-date">' + formatDate(session.date) + '</p></div>';
-      html += '<button type="button" class="session-delete" data-session-id="' + session.id + '" aria-label="Excluir sessão">' + RB.svg('trash') + '</button></div>';
-      html += '<div class="session-scores">';
-
-      var sortedScores = session.scores.slice().sort(function (a, b) { return b.points - a.points; });
-      sortedScores.forEach(function (score) {
-        var scorePlayer = RB.findPlayer(data, score.playerId);
-        var isWinner = !!winners[score.playerId];
-        var name = scorePlayer ? scorePlayer.name : '';
-        html += '<div class="session-score ' + (isWinner ? 'winner' : '') + '">';
-        html += RB.avatarHtml(name, scorePlayer && scorePlayer.photoDataUrl, 'session-score-avatar');
-        html += '<div class="session-score-name-wrap"><p class="session-score-name">' + RB.escapeHtml(name) + '</p>' +
-          (isWinner ? RB.starSvg('session-score-star') : '') + '</div>';
-        html += '<p class="session-score-points">' + score.points + '</p>';
-        html += '</div>';
-      });
-
-      html += '</div></div>';
-    });
-    panel.innerHTML = html;
-
-    panel.querySelectorAll('.session-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (!RB.isAuthed()) {
-          RB.showToast('Login necessário', 'Faça login no Control Panel para excluir uma sessão', true);
-          return;
-        }
-        if (!confirm('Isso vai excluir permanentemente esta sessão de corrida. Esta ação não pode ser desfeita.')) {
-          return;
-        }
-        var id = btn.getAttribute('data-session-id');
-        RB.deleteSession(id)
-          .then(function () { RB.showToast('Session Deleted', 'This race session was permanently deleted'); })
-          .catch(function () { RB.showToast('Erro', 'Failed to delete session', true); });
-      });
-    });
-  }
-
-  function formatDate(iso) {
-    var d = new Date(iso + 'T00:00:00');
-    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    panel.innerHTML = RB.renderHistoryHtml(data, { showDelete: false });
   }
 })();

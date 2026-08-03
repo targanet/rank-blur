@@ -213,6 +213,66 @@
     return winners;
   }
 
+  function formatDate(iso) {
+    var d = new Date(iso + 'T00:00:00');
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function renderHistoryHtml(data, opts) {
+    opts = opts || {};
+    var history = data.sessions.slice().sort(function (a, b) {
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    if (history.length === 0) {
+      return emptyCard('calendar', 'No sessions recorded', 'Log your first race above');
+    }
+
+    var html = '';
+    history.forEach(function (session) {
+      var winners = getSessionWinners(session);
+      html += '<div class="session-card">';
+      html += '<div class="session-header"><div class="session-date-row">' + svg('calendar') +
+        '<p class="session-date">' + formatDate(session.date) + '</p></div>';
+      if (opts.showDelete) {
+        html += '<button type="button" class="session-delete" data-session-id="' + session.id + '" aria-label="Excluir sessão">' + svg('trash') + '</button>';
+      }
+      html += '</div>';
+      html += '<div class="session-scores">';
+
+      var sortedScores = session.scores.slice().sort(function (a, b) { return b.points - a.points; });
+      sortedScores.forEach(function (score) {
+        var scorePlayer = findPlayer(data, score.playerId);
+        var isWinner = !!winners[score.playerId];
+        var name = scorePlayer ? scorePlayer.name : '';
+        html += '<div class="session-score ' + (isWinner ? 'winner' : '') + '">';
+        html += avatarHtml(name, scorePlayer && scorePlayer.photoDataUrl, 'session-score-avatar');
+        html += '<div class="session-score-name-wrap"><p class="session-score-name">' + escapeHtml(name) + '</p>' +
+          (isWinner ? starSvg('session-score-star') : '') + '</div>';
+        html += '<p class="session-score-points">' + score.points + '</p>';
+        html += '</div>';
+      });
+
+      html += '</div></div>';
+    });
+    return html;
+  }
+
+  function wireHistoryDeletes(container) {
+    container.querySelectorAll('.session-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Isso vai excluir permanentemente esta sessão de corrida. Esta ação não pode ser desfeita.')) {
+          return;
+        }
+        var id = btn.getAttribute('data-session-id');
+        deleteSession(id)
+          .then(function () { showToast('Session Deleted', 'This race session was permanently deleted'); })
+          .catch(function () { showToast('Erro', 'Failed to delete session', true); });
+      });
+    });
+  }
+
   var ICONS = {
     trophy: '<path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"/><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"/><path d="M18 9h1.5a1 1 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6 9H4.5a1 1 0 0 1 0-5H6"/>',
     trending: '<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>',
@@ -381,6 +441,8 @@
     findPlayer: findPlayer,
     getLeaderboard: getLeaderboard,
     getSessionWinners: getSessionWinners,
+    renderHistoryHtml: renderHistoryHtml,
+    wireHistoryDeletes: wireHistoryDeletes,
     svg: svg,
     starSvg: starSvg,
     avatarHtml: avatarHtml,

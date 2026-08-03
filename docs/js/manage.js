@@ -47,6 +47,7 @@
     latestData = data;
     renderLogSession(data);
     renderParticipants(data);
+    renderRaceHistory(data);
   });
 
   function todayIso() {
@@ -169,6 +170,12 @@
         handleDeletePlayer(id, player ? player.name : '');
       });
     });
+  }
+
+  function renderRaceHistory(data) {
+    var panel = document.getElementById('race-history-panel');
+    panel.innerHTML = RB.renderHistoryHtml(data, { showDelete: true });
+    RB.wireHistoryDeletes(panel);
   }
 
   function addPlayerForm() {
