@@ -66,11 +66,13 @@
 
     var html = '<form id="session-form" class="session-form">';
     html += '<label>Race Date<input type="date" id="session-date" value="' + todayIso() + '" /></label>';
-    html += '<p class="empty-subtitle" style="text-transform:uppercase;letter-spacing:.06rem;margin:.4rem 0 0;">Player Scores (0-100)</p>';
+    html += '<p class="empty-subtitle" style="text-transform:uppercase;letter-spacing:.06rem;margin:.4rem 0 0;">Player Scores (0-100) &amp; Vitórias (1º lugar)</p>';
     html += '<div class="score-grid">';
+    html += '<div class="score-row score-row-header"><span></span><span class="score-col-label">Nota</span><span class="score-col-label">Wins</span></div>';
     data.players.forEach(function (p) {
       html += '<div class="score-row"><span class="score-name">' + RB.escapeHtml(p.name) +
-        '</span><input type="number" min="0" max="100" value="0" data-player-id="' + p.id + '" class="score-input" /></div>';
+        '</span><input type="number" min="0" max="100" value="0" data-player-id="' + p.id + '" class="score-input" />' +
+        '<input type="number" min="0" value="0" data-player-id="' + p.id + '" class="wins-input" /></div>';
     });
     html += '</div>';
     html += '<div class="actions"><button type="submit" class="outline-btn">SALVAR SESSÃO</button></div>';
@@ -83,15 +85,25 @@
       var dateVal = document.getElementById('session-date').value || todayIso();
       var scores = [];
       panel.querySelectorAll('.score-input').forEach(function (input) {
+        var playerId = input.getAttribute('data-player-id');
         var points = parseInt(input.value, 10);
         if (isNaN(points)) {
           points = 0;
         }
-        scores.push({ playerId: input.getAttribute('data-player-id'), points: points });
+        var winsInput = panel.querySelector('.wins-input[data-player-id="' + playerId + '"]');
+        var wins = winsInput ? parseInt(winsInput.value, 10) : 0;
+        if (isNaN(wins)) {
+          wins = 0;
+        }
+        scores.push({ playerId: playerId, points: points, wins: wins });
       });
 
       if (scores.some(function (s) { return s.points < 0 || s.points > 100; })) {
         RB.showToast('Invalid Scores', 'All scores must be between 0 and 100', true);
+        return;
+      }
+      if (scores.some(function (s) { return s.wins < 0; })) {
+        RB.showToast('Invalid Wins', 'Wins não podem ser negativos', true);
         return;
       }
       if (!scores.some(function (s) { return s.points > 0; })) {
@@ -174,8 +186,110 @@
 
   function renderRaceHistory(data) {
     var panel = document.getElementById('race-history-panel');
-    panel.innerHTML = RB.renderHistoryHtml(data, { showDelete: true });
-    RB.wireHistoryDeletes(panel);
+    var history = data.sessions.slice().sort(function (a, b) {
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    if (history.length === 0) {
+      panel.innerHTML = RB.emptyCard('calendar', 'No sessions recorded', 'Log your first race above');
+      return;
+    }
+
+    var html = '';
+    history.forEach(function (session) {
+      var winners = RB.getSessionWinners(session);
+      var sortedScores = session.scores.slice().sort(function (a, b) { return b.points - a.points; });
+
+      html += '<div class="session-card">';
+      html += '<div class="session-header"><div class="session-date-row">' + RB.svg('calendar') +
+        '<p class="session-date">' + RB.formatDate(session.date) + '</p></div>';
+      html += '<button type="button" class="session-delete" data-session-id="' + session.id + '" aria-label="Excluir sessão">' + RB.svg('trash') + '</button>';
+      html += '</div>';
+
+      html += '<div class="session-scores">';
+      sortedScores.forEach(function (score) {
+        var scorePlayer = RB.findPlayer(data, score.playerId);
+        var isWinner = !!winners[score.playerId];
+        var name = scorePlayer ? scorePlayer.name : '';
+        html += '<div class="session-score ' + (isWinner ? 'winner' : '') + '">';
+        html += RB.avatarHtml(name, scorePlayer && scorePlayer.photoDataUrl, 'session-score-avatar');
+        html += '<div class="session-score-name-wrap"><p class="session-score-name">' + RB.escapeHtml(name) + '</p>' +
+          (isWinner ? RB.starSvg('session-score-star') : '') +
+          (score.wins > 1 ? '<span class="session-score-wins">&times;' + score.wins + '</span>' : '') + '</div>';
+        html += '<p class="session-score-points">' + score.points + '</p>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      html += '<details class="player-details session-edit-toggle"><summary>Editar nota / wins</summary>';
+      html += '<form class="edit-session-form session-form" data-session-id="' + session.id + '">';
+      html += '<div class="score-grid">';
+      html += '<div class="score-row score-row-header"><span></span><span class="score-col-label">Nota</span><span class="score-col-label">Wins</span></div>';
+      session.scores.forEach(function (score) {
+        var scorePlayer = RB.findPlayer(data, score.playerId);
+        var name = scorePlayer ? scorePlayer.name : '(jogador removido)';
+        html += '<div class="score-row"><span class="score-name">' + RB.escapeHtml(name) +
+          '</span><input type="number" min="0" max="100" value="' + score.points + '" data-player-id="' + score.playerId + '" class="score-input" />' +
+          '<input type="number" min="0" value="' + score.wins + '" data-player-id="' + score.playerId + '" class="wins-input" /></div>';
+      });
+      html += '</div>';
+      html += '<div class="actions"><button type="submit" class="secondary-btn">SALVAR ALTERAÇÕES</button></div>';
+      html += '</form>';
+      html += '</details>';
+
+      html += '</div>';
+    });
+    panel.innerHTML = html;
+
+    panel.querySelectorAll('.session-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Isso vai excluir permanentemente esta sessão de corrida. Esta ação não pode ser desfeita.')) {
+          return;
+        }
+        var id = btn.getAttribute('data-session-id');
+        RB.deleteSession(id)
+          .then(function () { RB.showToast('Session Deleted', 'This race session was permanently deleted'); })
+          .catch(function () { RB.showToast('Erro', 'Failed to delete session', true); });
+      });
+    });
+
+    panel.querySelectorAll('.edit-session-form').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        handleUpdateSession(form);
+      });
+    });
+  }
+
+  function handleUpdateSession(form) {
+    var sessionId = form.getAttribute('data-session-id');
+    var scores = [];
+    form.querySelectorAll('.score-input').forEach(function (input) {
+      var playerId = input.getAttribute('data-player-id');
+      var points = parseInt(input.value, 10);
+      if (isNaN(points)) {
+        points = 0;
+      }
+      var winsInput = form.querySelector('.wins-input[data-player-id="' + playerId + '"]');
+      var wins = winsInput ? parseInt(winsInput.value, 10) : 0;
+      if (isNaN(wins)) {
+        wins = 0;
+      }
+      scores.push({ playerId: playerId, points: points, wins: wins });
+    });
+
+    if (scores.some(function (s) { return s.points < 0 || s.points > 100; })) {
+      RB.showToast('Invalid Scores', 'All scores must be between 0 and 100', true);
+      return;
+    }
+    if (scores.some(function (s) { return s.wins < 0; })) {
+      RB.showToast('Invalid Wins', 'Wins não podem ser negativos', true);
+      return;
+    }
+
+    RB.updateSessionScores(sessionId, scores)
+      .then(function () { RB.showToast('Sessão atualizada', 'Alterações salvas'); })
+      .catch(function () { RB.showToast('Erro', 'Falha ao atualizar sessão', true); });
   }
 
   function addPlayerForm() {

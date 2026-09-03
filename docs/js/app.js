@@ -19,9 +19,27 @@
 
   function normalizeSession(session) {
     var scoresObj = session.scores || {};
-    session.scores = Object.keys(scoresObj).map(function (playerId) {
-      return { playerId: playerId, points: scoresObj[playerId] };
+    var hasExplicitWins = false;
+    var scoresArr = Object.keys(scoresObj).map(function (playerId) {
+      var raw = scoresObj[playerId];
+      if (raw !== null && typeof raw === 'object') {
+        hasExplicitWins = true;
+        return { playerId: playerId, points: raw.points || 0, wins: raw.wins || 0 };
+      }
+      // Legacy sessions stored the score as a plain number with no wins field.
+      return { playerId: playerId, points: raw || 0, wins: null };
     });
+
+    if (!hasExplicitWins && scoresArr.length) {
+      // Fall back to the old "highest score in the session wins" rule so
+      // historical sessions keep counting toward the wins total.
+      var max = Math.max.apply(null, scoresArr.map(function (s) { return s.points; }));
+      scoresArr.forEach(function (s) { s.wins = (max > 0 && s.points === max) ? 1 : 0; });
+    } else {
+      scoresArr.forEach(function (s) { if (s.wins === null) { s.wins = 0; } });
+    }
+
+    session.scores = scoresArr;
     return session;
   }
 
@@ -138,12 +156,18 @@
   function addSession(session) {
     var id = requireDb().ref('sessions').push().key;
     var scoresObj = {};
-    session.scores.forEach(function (s) { scoresObj[s.playerId] = s.points; });
+    session.scores.forEach(function (s) { scoresObj[s.playerId] = { points: s.points, wins: s.wins || 0 }; });
     return db.ref('sessions/' + id).set({ date: session.date, scores: scoresObj }).then(function () { return id; });
   }
 
   function deleteSession(id) {
     return requireDb().ref('sessions/' + id).remove();
+  }
+
+  function updateSessionScores(sessionId, scores) {
+    var scoresObj = {};
+    scores.forEach(function (s) { scoresObj[s.playerId] = { points: s.points, wins: s.wins || 0 }; });
+    return requireDb().ref('sessions/' + sessionId + '/scores').set(scoresObj);
   }
 
   function findPlayer(data, id) {
@@ -167,14 +191,7 @@
           });
         });
 
-        var wins = data.sessions.filter(function (session) {
-          if (session.scores.length === 0) {
-            return false;
-          }
-          var max = Math.max.apply(null, session.scores.map(function (s) { return s.points; }));
-          return max > 0 && session.scores.some(function (s) { return s.playerId === player.id && s.points === max; });
-        }).length;
-
+        var wins = scores.reduce(function (sum, s) { return sum + (s.wins || 0); }, 0);
         var total = scores.reduce(function (sum, s) { return sum + s.points; }, 0);
 
         return {
@@ -199,17 +216,11 @@
 
   function getSessionWinners(session) {
     var winners = {};
-    if (session.scores.length === 0) {
-      return winners;
-    }
-    var max = Math.max.apply(null, session.scores.map(function (s) { return s.points; }));
-    if (max > 0) {
-      session.scores.forEach(function (s) {
-        if (s.points === max) {
-          winners[s.playerId] = true;
-        }
-      });
-    }
+    session.scores.forEach(function (s) {
+      if (s.wins > 0) {
+        winners[s.playerId] = true;
+      }
+    });
     return winners;
   }
 
@@ -249,7 +260,8 @@
         html += '<div class="session-score ' + (isWinner ? 'winner' : '') + '">';
         html += avatarHtml(name, scorePlayer && scorePlayer.photoDataUrl, 'session-score-avatar');
         html += '<div class="session-score-name-wrap"><p class="session-score-name">' + escapeHtml(name) + '</p>' +
-          (isWinner ? starSvg('session-score-star') : '') + '</div>';
+          (isWinner ? starSvg('session-score-star') : '') +
+          (score.wins > 1 ? '<span class="session-score-wins">&times;' + score.wins + '</span>' : '') + '</div>';
         html += '<p class="session-score-points">' + score.points + '</p>';
         html += '</div>';
       });
@@ -459,9 +471,11 @@
     deletePlayer: deletePlayer,
     addSession: addSession,
     deleteSession: deleteSession,
+    updateSessionScores: updateSessionScores,
     findPlayer: findPlayer,
     getLeaderboard: getLeaderboard,
     getSessionWinners: getSessionWinners,
+    formatDate: formatDate,
     renderHistoryHtml: renderHistoryHtml,
     wireHistoryDeletes: wireHistoryDeletes,
     svg: svg,

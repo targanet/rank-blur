@@ -622,6 +622,13 @@ img {
   flex-shrink: 0;
 }
 
+.session-score-wins {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+  flex-shrink: 0;
+}
+
 .session-score-points {
   font-size: 1.3rem;
   font-weight: 700;
@@ -881,9 +888,21 @@ img {
 
 .score-row {
   display: grid;
-  grid-template-columns: 1fr 90px;
+  grid-template-columns: 1fr 70px 70px;
   align-items: center;
   gap: 0.6rem;
+}
+
+.score-row-header {
+  padding: 0 0 0.1rem;
+}
+
+.score-col-label {
+  font-size: 0.65rem;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.04rem;
+  text-align: center;
 }
 
 .score-name {
@@ -947,6 +966,16 @@ img {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06rem;
+}
+
+.session-edit-toggle {
+  margin-top: 1rem;
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 0.7rem;
+}
+
+.session-edit-toggle form {
+  margin-top: 0.8rem;
 }
 
 .player-bio {
